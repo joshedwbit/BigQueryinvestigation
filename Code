@@ -1,0 +1,68 @@
+#-----------------------------Question 1; How many bike stations are there?--------------------------------------------------------------------------------
+
+SELECT DISTINCT COUNT(station_id) FROM `bigquery-public-data.austin_bikeshare.bikeshare_stations`
+
+
+#answer=98
+
+#-----------------------------Question 2; How many bike stations have more than 15 docks?-------------------------------------------------------------------
+
+SELECT DISTINCT COUNT(station_id) FROM `bigquery-public-data.austin_bikeshare.bikeshare_stations`
+WHERE number_of_docks > 15;
+
+#answer=15
+
+#-----------------------------Question 3; What was the most popular council district where bike trips started from?------------------------------------------
+
+SELECT council_district, SUM(trips) as triptotal
+FROM
+(SELECT start_station_id, COUNT(DISTINCT(trip_id)) AS trips FROM `bigquery-public-data.austin_bikeshare.bikeshare_trips`
+GROUP BY start_station_id) 
+AS a 
+
+INNER JOIN
+
+(SELECT DISTINCT station_id, council_district FROM `bigquery-public-data.austin_bikeshare.bikeshare_stations`) 
+AS b
+
+ON a.start_station_id=b.station_id
+GROUP BY council_district
+ORDER BY triptotal DESC
+
+
+#answer=Council district 9
+
+#------------------------------Question 4; Using council districts to define the start and end destination, what were the most frequent bike trips taken?---------
+
+SELECT councildistrictstart, councildistrictend, COUNT(*) AS numtrips
+FROM
+
+(SELECT council_district as councildistrictstart, start_station_id, tripid
+FROM
+(SELECT DISTINCT trip_id AS tripid, start_station_id FROM `bigquery-public-data.austin_bikeshare.bikeshare_trips`) AS a
+INNER JOIN 
+(SELECT DISTINCT station_id, council_district FROM `bigquery-public-data.austin_bikeshare.bikeshare_stations`)
+AS b
+ON a.start_station_id=b.station_id)
+as x
+
+INNER JOIN
+
+(SELECT council_district as councildistrictend, end_station_id, tripid1
+FROM
+(SELECT DISTINCT trip_id AS tripid1, SAFE_CAST(end_station_id as int64) as end_station_id FROM `bigquery-public-data.austin_bikeshare.bikeshare_trips`
+) AS a
+INNER JOIN 
+(SELECT DISTINCT station_id, council_district FROM `bigquery-public-data.austin_bikeshare.bikeshare_stations`)
+AS b
+ON a.end_station_id=b.station_id)
+as y
+
+ON x.tripid=y.tripid1
+
+GROUP BY councildistrictstart, councildistrictend
+ORDER BY numtrips DESC
+
+
+
+#answer; Council district 9 to council district 9
