@@ -1,0 +1,77 @@
+#Question5; We’ve had some complaints that users have had issues with their bikes and are unable to get the bike out of their docks.
+#This is shown in the data by the bike having the same start and end station as well as the duration being 0.  Can you investigate this issue to see under what
+#scenarios are we experiencing a higher rate of this occurring.
+
+***
+#Note; further analysis comparing faulty values to that of the original dataset was conducted by exporting results to google 
+#sheets i.e. faulty trips/original trips *100 to find number of faulty trips as a percentage of total trips.
+***
+
+Analysis by station; 
+
+SELECT *
+FROM    
+    
+(SELECT start_station_name, COUNT(trip_id) AS tripcount_faulty
+FROM 
+(SELECT * FROM `bigquery-public-data.austin_bikeshare.bikeshare_trips`
+WHERE start_station_name=end_station_name AND duration_minutes=0)
+AS a
+INNER JOIN 
+(SELECT * FROM `bigquery-public-data.austin_bikeshare.bikeshare_stations`)
+AS b
+ON a.start_station_id=b.station_id
+GROUP BY start_station_name)
+
+INNER JOIN
+
+(SELECT start_station_name, COUNT(trip_id) AS tripcount
+FROM 
+(SELECT * FROM `bigquery-public-data.austin_bikeshare.bikeshare_trips`
+)
+AS a
+INNER JOIN 
+(SELECT * FROM `bigquery-public-data.austin_bikeshare.bikeshare_stations`)
+AS b
+ON a.start_station_id=b.station_id
+
+GROUP BY start_station_name)
+USING(start_station_name)
+ORDER BY tripcount_faulty DESC
+
+
+#This template was also used to investigate the effects of subscriber type, property type, power type, council district on faulty trips.
+#Since no individual factor had any significant effect as a whole, I then began to investigate targetting factors at specific stations rather than as a whole.
+
+Analysis by specific location;
+
+SELECT *
+FROM    
+    
+(SELECT property_type, COUNT(trip_id) AS tripcount_faulty
+FROM 
+(SELECT * FROM `bigquery-public-data.austin_bikeshare.bikeshare_trips`
+WHERE start_station_name='10th & Red River' AND start_station_name=end_station_name AND duration_minutes=0)
+AS a
+INNER JOIN 
+(SELECT * FROM `bigquery-public-data.austin_bikeshare.bikeshare_stations`)
+AS b
+ON a.start_station_id=b.station_id
+GROUP BY property_type)
+
+INNER JOIN
+
+(SELECT property_type, COUNT(trip_id) AS tripcount
+FROM 
+(SELECT * FROM `bigquery-public-data.austin_bikeshare.bikeshare_trips`
+WHERE start_station_name='10th & Red River'
+)
+AS a
+INNER JOIN 
+(SELECT * FROM `bigquery-public-data.austin_bikeshare.bikeshare_stations`)
+AS b
+ON a.start_station_id=b.station_id
+
+GROUP BY property_type)
+USING(property_type)
+ORDER BY tripcount_faulty DESC
